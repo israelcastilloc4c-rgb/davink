@@ -30,7 +30,7 @@ body{font-family:'Jost',sans-serif;background:var(--black);color:var(--white);-w
 #loginScreen.active{display:flex;}
 #loginScreen::before{content:'';position:absolute;top:-30%;left:50%;transform:translateX(-50%);width:600px;height:600px;background:radial-gradient(circle,var(--rose-glow) 0%,transparent 60%);pointer-events:none;}
 .login-box{width:100%;max-width:340px;position:relative;z-index:2;text-align:center;}
-.login-logo{width:130px;height:auto;margin:0 auto 36px;display:block;filter:drop-shadow(0 0 30px rgba(255,0,75,0.25));}
+.login-logo{width:160px;height:auto;margin:0 auto 38px;display:block;filter:drop-shadow(0 0 35px rgba(255,0,75,0.28));}
 .login-title{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:30px;line-height:1.1;margin-bottom:10px;letter-spacing:0.01em;}
 .login-sub{font-size:13px;color:var(--ash);margin-bottom:36px;line-height:1.6;font-weight:300;}
 .lfield{margin-bottom:14px;text-align:left;}
@@ -272,7 +272,10 @@ async function doAuth(){
     err.style.color='';
     err.textContent=traducirError(e.message);
     err.style.display='block';
-    btn.disabled=false;btn.textContent=authMode==='login'?'Entrar':'Crear cuenta';
+  }finally{
+    // SIEMPRE resetear el botón al terminar, haya éxito o error
+    btn.disabled=false;
+    btn.textContent=authMode==='login'?'Entrar':'Crear cuenta';
   }
 }
 
@@ -291,6 +294,14 @@ async function doLogout(){
   document.getElementById('loginScreen').classList.add('active');
   document.getElementById('email').value='';
   document.getElementById('password').value='';
+  // Resetear el botón de entrar por si quedó bloqueado
+  resetLoginBtn();
+}
+function resetLoginBtn(){
+  const btn=document.getElementById('loginBtn');
+  if(btn){btn.disabled=false;btn.textContent=authMode==='login'?'Entrar':'Crear cuenta';}
+  const err=document.getElementById('loginErr');
+  if(err)err.style.display='none';
 }
 
 async function loadSession(){
@@ -298,6 +309,7 @@ async function loadSession(){
   if(!session){
     document.getElementById('loginScreen').classList.add('active');
     document.getElementById('appScreen').classList.remove('active');
+    resetLoginBtn();
     return;
   }
   currentUser=session.user;
