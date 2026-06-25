@@ -83,7 +83,7 @@ input,select,textarea{max-width:100%;}
 .scard{background:var(--coal);border:1px solid var(--line);padding:18px;border-radius:4px;position:relative;overflow:hidden;}
 .scard.feature{border-color:var(--rose);background:linear-gradient(135deg,var(--coal),rgba(255,0,75,0.04));}
 .scard .lbl{font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ash2);margin-bottom:10px;font-weight:500;}
-.scard .val{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:32px;line-height:0.9;}
+.scard .val{font-family:'Jost',sans-serif;font-weight:600;font-size:26px;line-height:1;letter-spacing:-0.01em;}
 .scard .val.accent{color:var(--rose);}
 .scard .sub{font-size:11px;color:var(--ash2);margin-top:6px;font-weight:300;}
 
@@ -503,11 +503,15 @@ async function renderResumen(c){
   c.innerHTML=`
     <div class="shead"><div class="shead-l"><div class="eyebrow">${periodoLabel}</div><h1>Resumen</h1></div></div>
     ${periodoSelector("switchPage('resumen')")}
-    <div class="stats">
-      <div class="scard feature"><div class="lbl">Tu 30% (cesión a tatuadoras)</div><div class="val accent">${eur(ingresoEstudio)}</div></div>
-      <div class="scard"><div class="lbl">Tus tatuajes (100%)</div><div class="val">${eur(ingresosPropios)}</div><div class="sub">tus propios trabajos</div></div>
-      <div class="scard"><div class="lbl">Gastos</div><div class="val">${eur(gastosTotal)}</div></div>
-      <div class="scard feature"><div class="lbl">Beneficio neto</div><div class="val accent">${eur(beneficio)}</div><div class="sub">30% + tatuajes − gastos</div></div>
+    <div class="scard feature" style="margin-bottom:12px;">
+      <div class="lbl">Beneficio neto del periodo</div>
+      <div class="val accent" style="font-size:38px;">${eur(beneficio)}</div>
+      <div class="sub">tu 30% + tus tatuajes − gastos</div>
+    </div>
+    <div class="stats" style="grid-template-columns:repeat(3,1fr);">
+      <div class="scard"><div class="lbl">Tu 30%</div><div class="val accent" style="font-size:22px;">${eur(ingresoEstudio)}</div><div class="sub">cesión</div></div>
+      <div class="scard"><div class="lbl">Tus tatuajes</div><div class="val" style="font-size:22px;">${eur(ingresosPropios)}</div><div class="sub">al 100%</div></div>
+      <div class="scard"><div class="lbl">Gastos</div><div class="val" style="font-size:22px;">${eur(gastosTotal)}</div><div class="sub">del periodo</div></div>
     </div>
 
     <div style="background:var(--coal);border:1px solid var(--line);border-radius:4px;padding:20px;margin-bottom:28px;">
@@ -1079,16 +1083,21 @@ async function setActivoTat(id,activo){
   await loadTatuadoras();abrirPerfil(id);
 }
 async function intentarBorrarTat(id){
+  // No permitir borrarse a uno mismo
+  if(id===currentUser.id){showToast('No puedes eliminar tu propia cuenta','err');return;}
   // Comprobar si tiene trabajos
   const{data:trabajos}=await sb.from('trabajos').select('id').eq('tatuadora_id',id).limit(1);
   if(trabajos&&trabajos.length>0){
-    alert('Esta tatuadora tiene trabajos registrados. Por motivos contables y legales no se puede borrar (Hacienda exige conservar el histórico). En su lugar, márcala como Inactiva.');
+    alert('Esta tatuadora tiene trabajos registrados. Por motivos contables y legales no se puede borrar (Hacienda exige conservar el histórico). En su lugar, márcala como Inactiva para que no pueda entrar pero se conserve su histórico.');
     return;
   }
   if(!confirm('¿Eliminar esta tatuadora? No tiene trabajos registrados, así que se borrará por completo.'))return;
   const{error}=await sb.from('perfiles').delete().eq('id',id);
-  if(error){showToast('Error al eliminar','err');return;}
-  closeSheet();showToast('Tatuadora eliminada');await loadTatuadoras();switchPage('equipo');
+  if(error){showToast('Error al eliminar: '+error.message,'err');return;}
+  closeSheet();
+  showToast('Tatuadora eliminada');
+  await loadTatuadoras();
+  switchPage('equipo');
 }
 
 // ============ MI PERFIL (tatuadora) ============
