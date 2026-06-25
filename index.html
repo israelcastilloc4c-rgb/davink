@@ -19,7 +19,9 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;}
-body{font-family:'Jost',sans-serif;background:var(--black);color:var(--white);-webkit-font-smoothing:antialiased;}
+body{font-family:'Jost',sans-serif;background:var(--black);color:var(--white);-webkit-font-smoothing:antialiased;overflow-x:hidden;width:100%;}
+*{max-width:100%;}
+input,select,textarea{max-width:100%;}
 .serif{font-family:'Cormorant Garamond',serif;}
 
 .screen{display:none;min-height:100vh;}
@@ -47,15 +49,15 @@ body{font-family:'Jost',sans-serif;background:var(--black);color:var(--white);-w
 
 /* TOPBAR */
 .topbar{background:var(--noir);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:100;}
-.topbar-inner{padding:env(safe-area-inset-top,0) 20px 0;display:flex;align-items:center;justify-content:space-between;height:62px;}
+.topbar-inner{padding:env(safe-area-inset-top,0) 16px 0;display:flex;align-items:center;justify-content:space-between;height:66px;gap:8px;}
 .tb-brand{display:flex;align-items:center;gap:12px;}
-.tb-logo{height:40px;width:auto;filter:drop-shadow(0 0 12px rgba(255,0,75,0.3));}
-.tb-name{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;letter-spacing:0.06em;line-height:1;}
-.tb-user{display:flex;align-items:center;gap:10px;}
-.tb-uname{font-size:12px;color:var(--ash);font-weight:300;}
-.tb-role{font-size:9px;letter-spacing:0.12em;text-transform:uppercase;background:var(--rose);color:#fff;padding:4px 8px;border-radius:2px;font-weight:600;}
+.tb-logo{height:34px;width:auto;filter:drop-shadow(0 0 12px rgba(255,0,75,0.3));}
+.tb-name{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600;letter-spacing:0.04em;line-height:1.05;white-space:nowrap;}
+.tb-user{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.tb-uname{font-size:11px;color:var(--ash);font-weight:300;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px;}
+.tb-role{font-size:8px;letter-spacing:0.1em;text-transform:uppercase;background:var(--rose);color:#fff;padding:4px 7px;border-radius:2px;font-weight:600;white-space:nowrap;}
 .tb-role.tatuadora{background:var(--smoke);color:var(--ash);}
-.tb-out{background:none;border:1px solid var(--line);color:var(--ash);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;padding:7px 11px;border-radius:2px;cursor:pointer;font-weight:500;transition:all 0.2s;}
+.tb-out{background:none;border:1px solid var(--line);color:var(--ash);font-size:8px;letter-spacing:0.08em;text-transform:uppercase;padding:6px 9px;border-radius:2px;cursor:pointer;font-weight:500;transition:all 0.2s;white-space:nowrap;flex-shrink:0;}
 .tb-out:active{border-color:var(--rose);color:var(--rose);}
 
 /* TABS */
@@ -127,7 +129,7 @@ body{font-family:'Jost',sans-serif;background:var(--black);color:var(--white);-w
 .sheet-head{position:sticky;top:0;background:var(--noir);border-bottom:1px solid var(--line);padding:20px;display:flex;align-items:center;justify-content:space-between;z-index:2;}
 .sheet-head h2{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:25px;}
 .sheet-close{background:none;border:none;color:var(--ash);font-size:26px;cursor:pointer;line-height:1;width:32px;height:32px;}
-.sheet-body{padding:20px;}
+.sheet-body{padding:20px;overflow-x:hidden;}
 
 /* FORM */
 .fgroup{margin-bottom:18px;}
@@ -135,7 +137,9 @@ body{font-family:'Jost',sans-serif;background:var(--black);color:var(--white);-w
 .finput,.fselect{width:100%;background:var(--coal);border:1px solid var(--line);color:var(--white);font-family:'Jost',sans-serif;font-size:16px;padding:14px;border-radius:3px;outline:none;transition:all 0.2s;}
 .finput:focus,.fselect:focus{border-color:var(--rose);}
 .finput::placeholder{color:var(--ash2);}
-.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;}
+.frow .fgroup{min-width:0;}
+.finput,.fselect{max-width:100%;}
 .calc-box{background:linear-gradient(135deg,var(--coal),rgba(255,0,75,0.05));border:1px solid var(--rose);padding:18px;border-radius:4px;margin:18px 0;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;}
 .calc-box .k{font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ash2);margin-bottom:4px;font-weight:500;}
 .calc-box .split{display:flex;gap:24px;}
@@ -166,6 +170,12 @@ body{font-family:'Jost',sans-serif;background:var(--black);color:var(--white);-w
 .toast.err{background:var(--rose);color:#fff;}
 
 .loader{text-align:center;padding:56px;font-size:11px;color:var(--ash2);letter-spacing:0.2em;text-transform:uppercase;}
+
+@media(max-width:400px){
+  .tb-uname{display:none;}
+  .tb-name{font-size:15px;}
+  .tb-logo{height:30px;}
+}
 .muted{color:var(--ash2);}
 .hidden{display:none!important;}
 
@@ -601,7 +611,7 @@ function nuevoTrabajo(){
       <div class="fgroup"><label class="flabel">Cliente</label><input class="finput" id="t_cliente" placeholder="Nombre del cliente"></div>
       <div class="fgroup"><label class="flabel">Teléfono del cliente</label><input class="finput" id="t_tel" type="tel" placeholder="Número de contacto"></div>
       <div class="fgroup"><label class="flabel">Total del trabajo (€)</label><input class="finput" id="t_total" type="number" inputmode="decimal" placeholder="0.00" oninput="calcReparto()"></div>
-      <div class="calc-box"><span class="k">Reparto automático</span><div class="split"><div><div class="k">Tatuadora 70%</div><div class="v" id="calc_tat">0 €</div></div><div><div class="k">Estudio 30%</div><div class="v accent" id="calc_est">0 €</div></div></div></div>
+      ${isAdmin?'':`<div class="calc-box"><span class="k">Reparto automático</span><div class="split"><div><div class="k">Tatuadora 70%</div><div class="v" id="calc_tat">0 €</div></div><div><div class="k">Estudio 30%</div><div class="v accent" id="calc_est">0 €</div></div></div></div>`}
       <div class="frow">
         <div class="fgroup"><label class="flabel">Señal previa (€)</label><input class="finput" id="t_senal" type="number" inputmode="decimal" placeholder="0.00"></div>
         <div class="fgroup"><label class="flabel">Cobrado hoy (€)</label><input class="finput" id="t_cobrado" type="number" inputmode="decimal" placeholder="0.00"></div>
@@ -616,9 +626,12 @@ function nuevoTrabajo(){
 }
 
 function calcReparto(){
+  const tatEl=document.getElementById('calc_tat');
+  const estEl=document.getElementById('calc_est');
+  if(!tatEl||!estEl)return;
   const total=Number(document.getElementById('t_total').value)||0;
-  document.getElementById('calc_tat').textContent=eur(total*0.7);
-  document.getElementById('calc_est').textContent=eur(total*0.3);
+  tatEl.textContent=eur(total*0.7);
+  estEl.textContent=eur(total*0.3);
 }
 
 async function guardarTrabajo(){
