@@ -569,8 +569,10 @@ async function renderTrabajos(c,esAdmin){
 
   const titulo=esAdmin?'Trabajos':'Mis trabajos';
   const eyebrow=esAdmin?'Todas las tatuadoras':'Tus registros';
+  const adminIdsT=allTatuadoras.filter(x=>x.rol==='admin').map(x=>x.id);
   const totalPeriodo=lista.reduce((s,t)=>s+Number(t.total_trabajo),0);
-  const estudioPeriodo=lista.reduce((s,t)=>s+Number(t.porcentaje_estudio),0);
+  // El 30% de estudio solo cuenta para trabajos de tatuadoras, NO de Alba
+  const estudioPeriodo=lista.filter(t=>!adminIdsT.includes(t.tatuadora_id)).reduce((s,t)=>s+Number(t.porcentaje_estudio),0);
 
   let rows='';
   const adminIdsList=allTatuadoras.filter(x=>x.rol==='admin').map(x=>x.id);
@@ -598,7 +600,7 @@ async function renderTrabajos(c,esAdmin){
   if(!rows)rows='<div class="empty"><div class="empty-mark">Sin trabajos</div><div class="empty-sub">No hay registros en este periodo. Pulsa arriba para añadir uno.</div></div>';
 
   c.innerHTML=`
-    <div class="shead"><div class="shead-l"><div class="eyebrow">${eyebrow}</div><h1>${titulo}</h1></div><div class="shead-r">${lista.length} trabajos<br><span style="color:var(--rose);">${eur(estudioPeriodo)}</span> estudio</div></div>
+    <div class="shead"><div class="shead-l"><div class="eyebrow">${eyebrow}</div><h1>${titulo}</h1></div><div class="shead-r">${lista.length}<br>trabajos</div></div>
     ${periodoSelector(esAdmin?"switchPage('trabajos')":"switchPage('mis-trabajos')")}
     <input class="finput" style="margin-bottom:16px;" placeholder="Buscar cliente..." value="${busquedaTrabajos}" oninput="busquedaTrabajos=this.value;clearTimeout(window._bt);window._bt=setTimeout(()=>switchPage('${esAdmin?'trabajos':'mis-trabajos'}'),300);">
     <button class="btn-add" onclick="nuevoTrabajo()"><span class="plus">+</span> Registrar trabajo</button>
