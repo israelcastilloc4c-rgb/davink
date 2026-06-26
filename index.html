@@ -512,9 +512,9 @@ async function renderResumen(c){
   c.innerHTML=`
     <div class="shead"><div class="shead-l"><div class="eyebrow">${periodoLabel}</div><h1>Resumen</h1></div></div>
     ${periodoSelector("switchPage('resumen')")}
-    <div class="scard feature" style="margin-bottom:12px;">
+    <div class="scard feature" style="margin-bottom:12px;border-color:${beneficio>=0?'var(--green)':'var(--rose)'};background:linear-gradient(135deg,var(--coal),${beneficio>=0?'rgba(61,220,132,0.06)':'rgba(255,0,75,0.06)'});">
       <div class="lbl">Beneficio neto del periodo</div>
-      <div class="val accent" style="font-size:38px;">${eur(beneficio)}</div>
+      <div class="val" style="font-size:38px;color:${beneficio>=0?'var(--green)':'var(--rose)'};">${eur(beneficio)}</div>
       <div class="sub">tu 30% + tus tatuajes − gastos</div>
     </div>
     <div class="stats" style="grid-template-columns:repeat(3,1fr);">
