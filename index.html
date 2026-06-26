@@ -483,18 +483,27 @@ async function renderResumen(c){
   if(!tatRows)tatRows='<div class="empty"><div class="empty-mark">Sin actividad</div><div class="empty-sub">No hay trabajos en este periodo.</div></div>';
 
   // Mini gráfica de evolución (últimos 6 meses del año)
+  const adminIdsG=allTatuadoras.filter(x=>x.rol==='admin').map(x=>x.id);
   const evolucion=[];
   for(let m=0;m<12;m++){
     const tm=T.filter(t=>enPeriodo(t.fecha_trabajo,filtroAnio,m));
-    evolucion.push({mes:m,estudio:tm.reduce((s,t)=>s+Number(t.porcentaje_estudio),0)});
+    const gm=G.filter(g=>enPeriodo(g.fecha_gasto,filtroAnio,m));
+    // Beneficio del mes = 30% de tatuadoras + tatuajes propios de Alba - gastos
+    const ing30=tm.filter(t=>!adminIdsG.includes(t.tatuadora_id)).reduce((s,t)=>s+Number(t.porcentaje_estudio),0);
+    const ingPropios=tm.filter(t=>adminIdsG.includes(t.tatuadora_id)).reduce((s,t)=>s+Number(t.total_trabajo),0);
+    const gas=gm.reduce((s,g)=>s+Number(g.importe),0);
+    evolucion.push({mes:m,valor:ing30+ingPropios-gas});
   }
-  const maxEvol=Math.max(...evolucion.map(e=>e.estudio),1);
+  // La escala usa el valor absoluto máximo para que las barras se vean proporcionadas
+  const maxEvol=Math.max(...evolucion.map(e=>Math.abs(e.valor)),1);
   let barras=evolucion.map(e=>{
-    const h=Math.max((e.estudio/maxEvol)*100,2);
+    const h=Math.max((Math.abs(e.valor)/maxEvol)*100,2);
     const activo=e.mes===filtroMes;
-    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;" onclick="filtroMes=${e.mes};switchPage('resumen')">
+    const negativo=e.valor<0;
+    const color=activo?'var(--rose)':(negativo?'rgba(255,0,75,0.25)':'var(--smoke)');
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;" onclick="filtroMes=${e.mes};switchPage('resumen')" title="${MESES[e.mes]}: ${eur(e.valor)}">
       <div style="width:100%;display:flex;align-items:flex-end;height:80px;">
-        <div style="width:100%;height:${h}%;background:${activo?'var(--rose)':'var(--smoke)'};border-radius:2px 2px 0 0;transition:all 0.3s;"></div>
+        <div style="width:100%;height:${h}%;background:${color};border-radius:2px 2px 0 0;transition:all 0.3s;${negativo?'border-bottom:2px solid var(--rose);':''}"></div>
       </div>
       <span style="font-size:8px;color:${activo?'var(--rose)':'var(--ash2)'};letter-spacing:0.05em;">${MESES_CORTO[e.mes]}</span>
     </div>`;
@@ -515,7 +524,7 @@ async function renderResumen(c){
     </div>
 
     <div style="background:var(--coal);border:1px solid var(--line);border-radius:4px;padding:20px;margin-bottom:28px;">
-      <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ash2);margin-bottom:16px;font-weight:500;">Evolución de tu 30% · ${filtroAnio}</div>
+      <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ash2);margin-bottom:16px;font-weight:500;">Evolución del beneficio neto · ${filtroAnio}</div>
       <div style="display:flex;gap:4px;align-items:flex-end;">${barras}</div>
     </div>
 
