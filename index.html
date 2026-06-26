@@ -482,6 +482,48 @@ async function renderResumen(c){
   });
   if(!tatRows)tatRows='<div class="empty"><div class="empty-mark">Sin actividad</div><div class="empty-sub">No hay trabajos en este periodo.</div></div>';
 
+  // ===== MOVIMIENTOS (libro de caja) =====
+  // Ingresos: 30% de tatuadoras + 100% de trabajos de Alba. Gastos: negativos.
+  const movs=[];
+  Tp.forEach(t=>{
+    const esDeAlba=adminIds2.includes(t.tatuadora_id);
+    if(esDeAlba){
+      movs.push({fecha:t.fecha_trabajo,concepto:'Tatuaje propio · '+t.cliente_nombre,importe:Number(t.total_trabajo),tipo:'ingreso'});
+    }else{
+      const tat=allTatuadoras.find(x=>x.id===t.tatuadora_id);
+      movs.push({fecha:t.fecha_trabajo,concepto:'30% '+(tat?tat.nombre_completo.split(' ')[0]:'')+' · '+t.cliente_nombre,importe:Number(t.porcentaje_estudio),tipo:'ingreso'});
+    }
+  });
+  Gp.forEach(g=>{
+    movs.push({fecha:g.fecha_gasto,concepto:g.concepto,importe:-Number(g.importe),tipo:'gasto'});
+  });
+  // Ordenar por fecha descendente
+  movs.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+  const totalMovs=movs.reduce((s,m)=>s+m.importe,0);
+
+  let movRows='';
+  movs.forEach(m=>{
+    const pos=m.importe>=0;
+    movRows+=`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;background:var(--coal);border:1px solid var(--line);border-radius:3px;margin-bottom:6px;">
+      <div style="min-width:0;flex:1;">
+        <div style="font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.concepto}</div>
+        <div style="font-size:10px;color:var(--ash2);margin-top:3px;">${fecha(m.fecha)}</div>
+      </div>
+      <div style="font-family:'Jost',sans-serif;font-weight:600;font-size:15px;white-space:nowrap;color:${pos?'var(--green)':'var(--rose)'};">${pos?'+':''}${eur(m.importe)}</div>
+    </div>`;
+  });
+  let movimientosHtml;
+  if(!movs.length){
+    movimientosHtml='<div class="empty"><div class="empty-mark">Sin movimientos</div><div class="empty-sub">No hay ingresos ni gastos en este periodo.</div></div>';
+  }else{
+    movimientosHtml=`
+      <div class="scard" style="margin-bottom:14px;border-color:${totalMovs>=0?'var(--green)':'var(--rose)'};">
+        <div class="lbl">Diferencia (ingresos − gastos)</div>
+        <div class="val" style="font-size:30px;color:${totalMovs>=0?'var(--green)':'var(--rose)'};">${totalMovs>=0?'+':''}${eur(totalMovs)}</div>
+      </div>
+      <div>${movRows}</div>`;
+  }
+
   // Mini gráfica de evolución (últimos 6 meses del año)
   const adminIdsG=allTatuadoras.filter(x=>x.rol==='admin').map(x=>x.id);
   const evolucion=[];
@@ -546,6 +588,9 @@ async function renderResumen(c){
 
     <div class="shead" style="margin-bottom:16px;"><div class="shead-l"><h1 style="font-size:26px;">Por tatuadora</h1></div><button class="btn ghost sm" onclick="exportarResumen()">Exportar CSV</button></div>
     <div class="wlist">${tatRows}</div>
+
+    <div class="shead" style="margin:32px 0 16px;"><div class="shead-l"><div class="eyebrow">Libro de caja</div><h1 style="font-size:26px;">Movimientos</h1></div></div>
+    ${movimientosHtml}
   `;
 }
 
