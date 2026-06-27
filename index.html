@@ -238,6 +238,7 @@ const sb=window.supabase.createClient(SB_URL,SB_KEY);
 let currentUser=null;
 let currentProfile=null;
 let isAdmin=false;
+let isRecepcion=false;
 let allTatuadoras=[];
 
 // ===== AUTH =====
@@ -293,7 +294,7 @@ function traducirError(msg){
 
 async function doLogout(){
   await sb.auth.signOut();
-  currentUser=null;currentProfile=null;isAdmin=false;
+  currentUser=null;currentProfile=null;isAdmin=false;isRecepcion=false;
   document.getElementById('appScreen').classList.remove('active');
   document.getElementById('loginScreen').classList.add('active');
   document.getElementById('email').value='';
@@ -325,15 +326,16 @@ async function loadSession(){
   }
   currentProfile=profile;
   isAdmin=profile.rol==='admin';
+  isRecepcion=profile.rol==='recepcion';
   document.getElementById('loginScreen').classList.remove('active');
   document.getElementById('appScreen').classList.add('active');
   // nombre de usuario ya no se muestra en topbar
   const roleEl=document.getElementById('userRole');
-  roleEl.textContent=isAdmin?'Admin':'Tatuadora';
+  roleEl.textContent=isAdmin?'Admin':(isRecepcion?'Recepción':'Tatuadora');
   roleEl.className='tb-role'+(isAdmin?'':' tatuadora');
-  if(isAdmin){await loadTatuadoras();}
+  if(isAdmin||isRecepcion){await loadTatuadoras();}
   buildTabs();
-  switchPage(isAdmin?'resumen':'mis-trabajos');
+  switchPage(isAdmin?'resumen':(isRecepcion?'trabajos':'mis-trabajos'));
 }
 
 async function loadTatuadoras(){
@@ -343,9 +345,15 @@ async function loadTatuadoras(){
 
 // ===== TABS =====
 function buildTabs(){
-  const tabs=isAdmin
-    ?[['resumen','Resumen'],['trabajos','Trabajos'],['facturas','Facturas'],['gastos','Gastos'],['equipo','Equipo']]
-    :[['mis-trabajos','Mis trabajos'],['mi-perfil','Mi perfil']];
+  let tabs;
+  if(isAdmin){
+    tabs=[['resumen','Resumen'],['trabajos','Trabajos'],['facturas','Facturas'],['gastos','Gastos'],['equipo','Equipo']];
+  }else if(isRecepcion){
+    // Recepción: trabajos de todas y equipo, SIN resumen/facturas/gastos
+    tabs=[['trabajos','Trabajos'],['equipo','Equipo'],['mi-perfil','Mi perfil']];
+  }else{
+    tabs=[['mis-trabajos','Mis trabajos'],['mi-perfil','Mi perfil']];
+  }
   const el=document.getElementById('tabs');
   el.innerHTML=tabs.map(([id,label])=>`<button class="tab" data-page="${id}" onclick="switchPage('${id}')">${label}</button>`).join('');
 }
@@ -664,13 +672,21 @@ async function renderTrabajos(c,esAdmin){
 }
 
 function nuevoTrabajo(){
+  // Selector de tatuadora: solo para admin y recepción (registran para otras)
+  const necesitaSelector=isAdmin||isRecepcion;
+  let selectorTat='';
+  if(necesitaSelector){
+    const opts=allTatuadoras.filter(t=>t.rol!=='recepcion'&&t.activo!==false).map(t=>`<option value="${t.id}">${t.nombre_completo}${t.rol==='admin'?' (yo)':''}</option>`).join('');
+    selectorTat=`<div class="fgroup"><label class="flabel">¿Para qué tatuadora?</label><select class="fselect" id="t_tatuadora" onchange="calcReparto()">${opts}</select></div>`;
+  }
   openSheet(`
     <div class="sheet-head"><h2>Nuevo trabajo</h2><button class="sheet-close" onclick="closeSheet()">×</button></div>
     <div class="sheet-body">
+      ${selectorTat}
       <div class="fgroup"><label class="flabel">Cliente</label><input class="finput" id="t_cliente" placeholder="Nombre del cliente"></div>
       <div class="fgroup"><label class="flabel">Teléfono del cliente</label><input class="finput" id="t_tel" type="tel" placeholder="Número de contacto"></div>
       <div class="fgroup"><label class="flabel">Total del trabajo (€)</label><input class="finput" id="t_total" type="number" inputmode="decimal" placeholder="0.00" oninput="calcReparto()"></div>
-      ${isAdmin?'':`<div class="calc-box"><span class="k">Reparto automático</span><div class="split"><div><div class="k">Tatuadora 70%</div><div class="v" id="calc_tat">0 €</div></div><div><div class="k">Estudio 30%</div><div class="v accent" id="calc_est">0 €</div></div></div></div>`}
+      <div class="calc-box" id="reparto_box" style="${(isAdmin&&!isRecepcion)?'display:none;':''}"><span class="k">Reparto automático</span><div class="split"><div><div class="k">Tatuadora 70%</div><div class="v" id="calc_tat">0 €</div></div><div><div class="k">Estudio 30%</div><div class="v accent" id="calc_est">0 €</div></div></div></div>
       <div class="frow">
         <div class="fgroup"><label class="flabel">Señal previa (€)</label><input class="finput" id="t_senal" type="number" inputmode="decimal" placeholder="0.00"></div>
         <div class="fgroup"><label class="flabel">Cobrado hoy (€)</label><input class="finput" id="t_cobrado" type="number" inputmode="decimal" placeholder="0.00"></div>
@@ -685,6 +701,14 @@ function nuevoTrabajo(){
 }
 
 function calcReparto(){
+  const repartoBox=document.getElementById('reparto_box');
+  // Si hay selector de tatuadora, comprobar si la elegida es admin (Alba = ingreso propio, sin reparto)
+  const tatSel=document.getElementById('t_tatuadora');
+  if(tatSel&&repartoBox){
+    const elegida=allTatuadoras.find(x=>x.id===tatSel.value);
+    if(elegida&&elegida.rol==='admin'){repartoBox.style.display='none';}
+    else{repartoBox.style.display='';}
+  }
   const tatEl=document.getElementById('calc_tat');
   const estEl=document.getElementById('calc_est');
   if(!tatEl||!estEl)return;
@@ -700,8 +724,11 @@ async function guardarTrabajo(){
   if(!cliente){showToast('Pon el nombre del cliente','err');return;}
   if(!telefono){showToast('Añade el teléfono del cliente','err');return;}
   if(total<=0){showToast('Pon el total del trabajo','err');return;}
+  // Si hay selector (admin/recepción), usar la tatuadora elegida; si no, el usuario actual
+  const tatSel=document.getElementById('t_tatuadora');
+  const tatuadoraId=tatSel?tatSel.value:currentUser.id;
   const payload={
-    tatuadora_id:currentUser.id,
+    tatuadora_id:tatuadoraId,
     cliente_nombre:cliente,
     cliente_telefono:telefono,
     total_trabajo:total,
@@ -1104,7 +1131,7 @@ async function abrirPerfil(id){
         <div class="fgroup"><label class="flabel">Ciudad</label><input class="finput" id="p_ciudad" value="${t.ciudad||''}"></div>
       </div>
       <div class="fgroup"><label class="flabel">Teléfono</label><input class="finput" id="p_tel" value="${t.telefono||''}"></div>
-      <div class="fgroup"><label class="flabel">Rol</label><select class="fselect" id="p_rol"><option value="tatuadora" ${t.rol==='tatuadora'?'selected':''}>Tatuadora</option><option value="admin" ${t.rol==='admin'?'selected':''}>Admin</option></select></div>
+      ${isAdmin?`<div class="fgroup"><label class="flabel">Rol</label><select class="fselect" id="p_rol"><option value="tatuadora" ${t.rol==='tatuadora'?'selected':''}>Tatuadora</option><option value="recepcion" ${t.rol==='recepcion'?'selected':''}>Recepción</option><option value="admin" ${t.rol==='admin'?'selected':''}>Admin</option></select></div>`:`<div class="fgroup"><label class="flabel">Rol</label><div style="font-weight:600;text-transform:capitalize;">${t.rol}</div><input type="hidden" id="p_rol" value="${t.rol}"></div>`}
       <div class="fgroup"><label class="flabel">Estado</label>
         <div class="vctrl">
           <button class="vbtn ${t.activo?'active val':''}" onclick="setActivoTat('${id}',true)">Activa</button>
